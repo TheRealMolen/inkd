@@ -32,8 +32,7 @@ static constexpr uint8_t DataSelect = 7;   // HIGH => the SPI transfer is data, 
 static constexpr uint8_t ChipSelect = 8;
 }
 
-// IL0373 datasheet: https://www.mikroshop.ch/pdf/IL0373.pdf
-//    commands (see p7)
+// datasheet: https://v4.cecdn.yun300.cn/100001_1909185148/GDEW029T5D.pdf
 namespace cmd
 {
 static constexpr uint8_t PanelSetting = 0x00;
@@ -120,7 +119,8 @@ constexpr uint8_t VcomLut_Grey[] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  // NOTE: docs say this should be a 45B command
+  0x00, 0x00,
+  // NOTE: docs say this should be a 45B command, but then suggest that it should really be 44B?
 };
 constexpr uint8_t W2WLut_Grey[] = {
   0x40, 0x0A, 0x00, 0x00, 0x00, 0x01,
@@ -202,7 +202,10 @@ uint8_t sendCommand(const uint8_t cmd)
 void sendCommand(const uint8_t cmd, const uint8_t arg0)
 {
   Serial.print("CMD1 ");
-  Serial.println(cmd, 16);
+  Serial.print(cmd, 16);
+  Serial.print(' ');
+  Serial.print(arg0, 16);
+  Serial.println();
 
   beginSpiCmd();
   sendSpiByte(cmd);
@@ -215,7 +218,12 @@ void sendCommand(const uint8_t cmd, const uint8_t arg0)
 void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1)
 {
   Serial.print("CMD2 ");
-  Serial.println(cmd, 16);
+  Serial.print(cmd, 16);
+  Serial.print(' ');
+  Serial.print(arg0, 16);
+  Serial.print(' ');
+  Serial.print(arg1, 16);
+  Serial.println();
 
   beginSpiCmd();
   sendSpiByte(cmd);
@@ -229,7 +237,14 @@ void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1)
 void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1, const uint8_t arg2)
 {
   Serial.print("CMD3 ");
-  Serial.println(cmd, 16);
+  Serial.print(cmd, 16);
+  Serial.print(' ');
+  Serial.print(arg0, 16);
+  Serial.print(' ');
+  Serial.print(arg1, 16);
+  Serial.print(' ');
+  Serial.print(arg2, 16);
+  Serial.println();
 
   beginSpiCmd();
   sendSpiByte(cmd);
@@ -244,7 +259,16 @@ void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1, cons
 void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1, const uint8_t arg2, const uint8_t arg3)
 {
   Serial.print("CMD4 ");
-  Serial.println(cmd, 16);
+  Serial.print(cmd, 16);
+  Serial.print(' ');
+  Serial.print(arg0, 16);
+  Serial.print(' ');
+  Serial.print(arg1, 16);
+  Serial.print(' ');
+  Serial.print(arg2, 16);
+  Serial.print(' ');
+  Serial.print(arg3, 16);
+  Serial.println();
 
   beginSpiCmd();
   sendSpiByte(cmd);
@@ -260,7 +284,18 @@ void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1, cons
 void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1, const uint8_t arg2, const uint8_t arg3, const uint8_t arg4)
 {
   Serial.print("CMD5 ");
-  Serial.println(cmd, 16);
+  Serial.print(cmd, 16);
+  Serial.print(' ');
+  Serial.print(arg0, 16);
+  Serial.print(' ');
+  Serial.print(arg1, 16);
+  Serial.print(' ');
+  Serial.print(arg2, 16);
+  Serial.print(' ');
+  Serial.print(arg3, 16);
+  Serial.print(' ');
+  Serial.print(arg4, 16);
+  Serial.println();
 
   beginSpiCmd();
   sendSpiByte(cmd);
@@ -294,6 +329,23 @@ void sendBuffer(const uint8_t cmd, const BufType& buf)
   
   endSpi();
 }
+void sendConstantData(const uint8_t cmd, const uint32_t bytes, const uint8_t val)
+{
+  Serial.print("CMDCON ");
+  Serial.print(cmd, 16);
+  Serial.print(" ");
+  Serial.print(bytes);
+  Serial.println("bytes");
+
+  beginSpiCmd();
+  sendSpiByte(cmd);
+
+  contSpiData();
+  for (uint32_t i=0; i<bytes; ++i)
+    sendSpiByte(val);
+  
+  endSpi();
+}
 
 void resetDisplay()
 {
@@ -310,6 +362,7 @@ void resetDisplay()
   delay(10);
 }
 
+
 void powerUp(ScreenMode screenMode = Grey4)
 {
   resetDisplay();
@@ -317,17 +370,19 @@ void powerUp(ScreenMode screenMode = Grey4)
   const bool mono = (screenMode == Mono);
   
   uint8_t vdhr = mono ? 0x03 : 0x13;
-  sendCommand(cmd::PowerSetting, 0x03, 0x00, 0x2b, 0x2b, vdhr);    // defaults + +-11V, 6.2V
   sendCommand(cmd::BoosterSoftStart, 0x17, 0x17, 0x17);  // defaults
+  sendCommand(cmd::PowerSetting, 0x03, 0x00, 0x2b, 0x2b, vdhr);    // defaults + +-11V, 6.2V
   sendCommand(cmd::PowerOn);
   delay(200);
 
-  sendCommand(cmd::PanelSetting, 0xbf, 0x0d);  // defaults + LUT from register, B&W panel
+  sendCommand(cmd::PanelSetting, 0xbf/*, 0x0d*/);  // defaults + LUT from register, B&W panel
   sendCommand(cmd::PLLControl, 0x3c);
-  sendCommand(cmd::VcmDcSetting, 0x12);  // -1.0V
-  sendCommand(cmd::IntervalSetting, 0x97);
+  
   static_assert(ScreenWidth < 256);
   sendCommand(cmd::ResolutionSetting, uint8_t(ScreenWidth), uint8_t(ScreenHeight >> 8), uint8_t(ScreenHeight & 0xff));
+  
+  sendCommand(cmd::VcmDcSetting, 0x12);  // -1.0V
+  sendCommand(cmd::IntervalSetting, 0x97);
   
   if (screenMode == Grey4)
   {
@@ -354,15 +409,16 @@ void powerDown()
   sendCommand(cmd::PowerOff);
 }
 
+
 } // namespace
 
 
 static constexpr uint16_t ScreenWidth = magtag::ScreenWidth;
 static constexpr uint16_t ScreenHeight = magtag::ScreenHeight;
 static constexpr uint16_t NumPixels = ScreenWidth * ScreenHeight;
-static constexpr uint16_t BufferBytes = NumPixels / 8;
-uint8_t     m_plane0[BufferBytes];
-uint8_t     m_plane1[BufferBytes];
+static constexpr uint16_t ScreenBytes = NumPixels / 8;
+uint8_t     m_plane0[ScreenBytes];
+uint8_t     m_plane1[ScreenBytes];
 
 void setup() {
   Serial.begin(115200);
@@ -382,8 +438,39 @@ void setup() {
       m_plane1[x8 + (y*ScreenWidth/8)] = 0xff;
     }
   }
+  int ox8 = 0;
+  for (int y=90; y<ScreenHeight-20; ++y) {
+    int x8 = ox8;
+    ox8 = (ox8 < ScreenWidth/8) ? ox8+1: 0;
+    m_plane0[x8 + (y*ScreenWidth/8)] = 0;
+    m_plane1[x8 + (y*ScreenWidth/8)] = 0;
+  }
 }
 
+
+void clearPlane(uint32_t plane)
+{
+  using namespace magtag;
+  //auto screenMode = magtag::Mono;
+  //powerUp(screenMode);
+
+  auto planeCmd = plane == 0 ? cmd::SendPlane0 : cmd::SendPlane1;
+  sendConstantData(planeCmd, ScreenBytes, 0xff);
+  
+  sendCommand(cmd::DataStop);
+}
+
+void clearScreen()
+{
+  magtag::powerUp(magtag::Grey4);
+  
+  clearPlane(0);
+  delay(2);
+  clearPlane(1);
+  
+  magtag::sendCommand(magtag::cmd::DisplayRefresh);
+  delay(magtag::DisplayRefreshDelay);
+}
 
 void redrawScreen()
 {
@@ -391,12 +478,9 @@ void redrawScreen()
   auto screenMode = magtag::Grey4;
   powerUp(screenMode);
 
- // if (screenMode == magtag::Grey4)
-  {
-    sendBuffer(cmd::SendPlane0, m_plane0);
-    delay(2);
-  }
-  sendBuffer(cmd::SendPlane1, m_plane1);  
+  sendBuffer(cmd::SendPlane0, m_plane0);
+  delay(2);
+  sendBuffer(cmd::SendPlane1, m_plane1); 
 
   sendCommand(cmd::DisplayRefresh);
   delay(DisplayRefreshDelay);
@@ -406,17 +490,19 @@ void redrawScreen()
 
 void loop() {
 
-  //display.begin(THINKINK_GRAYSCALE4);
-  display.begin(THINKINK_MONO);
+  display.begin(THINKINK_GRAYSCALE4);
+  //display.begin(THINKINK_MONO);
 
-  Serial.print("display buffer1_size=");
-  Serial.println(display.buffer1_size);
+  //Serial.print("display buffer1_size=");
+  //Serial.println(display.buffer1_size);
 
   display.clearBuffer();
   display.fillRect(60, 20, 100, 80, EPD_DARK);
+  display.fillRect(80, 50, 140, 20, EPD_BLACK);
   display.display();
   delay(2000);
 
+  clearPlane(0);
   redrawScreen();
   //memcpy(display.buffer1, m_plane0, display.buffer1_size);
   //memcpy(display.buffer2, m_plane1, display.buffer2_size);

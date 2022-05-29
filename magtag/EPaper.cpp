@@ -15,8 +15,7 @@ static constexpr uint8_t DataSelect = 7;   // HIGH => the SPI transfer is data, 
 static constexpr uint8_t ChipSelect = 8;
 }
 
-// IL0373 datasheet: https://www.mikroshop.ch/pdf/IL0373.pdf
-//    commands (see p7)
+// datasheet: https://v4.cecdn.yun300.cn/100001_1909185148/GDEW029T5D.pdf
 namespace cmd
 {
 static constexpr uint8_t PanelSetting = 0x00;
@@ -43,58 +42,11 @@ static constexpr uint8_t GetStatus = 0x71;
 static constexpr uint8_t VcmDcSetting = 0x82;
 }
 
-static constexpr uint16_t DisplayRefreshDelay = 1000;  // ms
+static constexpr uint16_t DisplayRefreshDelay = 900;  // ms
 
 
 // these are the LUTs calibrated for the screens used in the magtag
 // taken from ThinkInk_290_Grayscale4_T5.h from Adafruit's EPD Arduino library
-constexpr uint8_t VcomLut_Mono[] = {
-  0x00, 0x01, 0x0E, 0x00, 0x00, 0x01,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00,
-};
-constexpr uint8_t W2WLut_Mono[] = {
-  0x00, 0x01, 0x0E, 0x00, 0x00, 0x01,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-};
-constexpr uint8_t B2WLut_Mono[] = {
-  0x20, 0x01, 0x0E, 0x00, 0x00, 0x01,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-};
-constexpr uint8_t W2BLut_Mono[] = {
-  0x10, 0x01, 0x0E, 0x00, 0x00, 0x01,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-};
-constexpr uint8_t B2BLut_Mono[] = {
-  0x00, 0x01, 0x0E, 0x00, 0x00, 0x01,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,	
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-};
-
 constexpr uint8_t VcomLut_Grey[] = {
   0x00, 0x0A, 0x00, 0x00, 0x00, 0x01,
   0x60, 0x14, 0x14, 0x00, 0x00, 0x01,
@@ -162,7 +114,6 @@ inline void contSpiData()   // call after beginSpiCmd to mark the start of data
 inline void endSpi()
 {
   digitalWrite(pin::ChipSelect, 1);
-
   SPI.endTransaction();
 }
 
@@ -186,7 +137,10 @@ uint8_t sendCommand(const uint8_t cmd)
 void sendCommand(const uint8_t cmd, const uint8_t arg0)
 {
   Serial.print("CMD1 ");
-  Serial.println(cmd, 16);
+  Serial.print(cmd, 16);
+  Serial.print(' ');
+  Serial.print(arg0, 16);
+  Serial.println();
 
   beginSpiCmd();
   sendSpiByte(cmd);
@@ -199,7 +153,12 @@ void sendCommand(const uint8_t cmd, const uint8_t arg0)
 void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1)
 {
   Serial.print("CMD2 ");
-  Serial.println(cmd, 16);
+  Serial.print(cmd, 16);
+  Serial.print(' ');
+  Serial.print(arg0, 16);
+  Serial.print(' ');
+  Serial.print(arg1, 16);
+  Serial.println();
 
   beginSpiCmd();
   sendSpiByte(cmd);
@@ -213,7 +172,14 @@ void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1)
 void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1, const uint8_t arg2)
 {
   Serial.print("CMD3 ");
-  Serial.println(cmd, 16);
+  Serial.print(cmd, 16);
+  Serial.print(' ');
+  Serial.print(arg0, 16);
+  Serial.print(' ');
+  Serial.print(arg1, 16);
+  Serial.print(' ');
+  Serial.print(arg2, 16);
+  Serial.println();
 
   beginSpiCmd();
   sendSpiByte(cmd);
@@ -228,7 +194,16 @@ void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1, cons
 void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1, const uint8_t arg2, const uint8_t arg3)
 {
   Serial.print("CMD4 ");
-  Serial.println(cmd, 16);
+  Serial.print(cmd, 16);
+  Serial.print(' ');
+  Serial.print(arg0, 16);
+  Serial.print(' ');
+  Serial.print(arg1, 16);
+  Serial.print(' ');
+  Serial.print(arg2, 16);
+  Serial.print(' ');
+  Serial.print(arg3, 16);
+  Serial.println();
 
   beginSpiCmd();
   sendSpiByte(cmd);
@@ -244,7 +219,18 @@ void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1, cons
 void sendCommand(const uint8_t cmd, const uint8_t arg0, const uint8_t arg1, const uint8_t arg2, const uint8_t arg3, const uint8_t arg4)
 {
   Serial.print("CMD5 ");
-  Serial.println(cmd, 16);
+  Serial.print(cmd, 16);
+  Serial.print(' ');
+  Serial.print(arg0, 16);
+  Serial.print(' ');
+  Serial.print(arg1, 16);
+  Serial.print(' ');
+  Serial.print(arg2, 16);
+  Serial.print(' ');
+  Serial.print(arg3, 16);
+  Serial.print(' ');
+  Serial.print(arg4, 16);
+  Serial.println();
 
   beginSpiCmd();
   sendSpiByte(cmd);
@@ -278,7 +264,23 @@ void sendBuffer(const uint8_t cmd, const BufType& buf)
   
   endSpi();
 }
+void sendConstantData(const uint8_t cmd, const uint32_t bytes, const uint8_t val)
+{
+  Serial.print("CMDCON ");
+  Serial.print(cmd, 16);
+  Serial.print(" ");
+  Serial.print(bytes);
+  Serial.println("bytes");
 
+  beginSpiCmd();
+  sendSpiByte(cmd);
+
+  contSpiData();
+  for (uint32_t i=0; i<bytes; ++i)
+    sendSpiByte(val);
+  
+  endSpi();
+}
 
 void resetDisplay()
 {
@@ -301,19 +303,52 @@ void powerUp(ScreenMode screenMode = Grey4)
   resetDisplay();
 
   const bool mono = (screenMode == Mono);
+
+  Serial.print("PUP mode=");
+  Serial.println(mono ? "mono" : "grey4");
   
   uint8_t vdhr = mono ? 0x03 : 0x13;
-  sendCommand(cmd::PowerSetting, 0x03, 0x00, 0x2b, 0x2b, vdhr);    // defaults + +-11V, 6.2V
   sendCommand(cmd::BoosterSoftStart, 0x17, 0x17, 0x17);  // defaults
+  sendCommand(cmd::PowerSetting, 0x03, 0x00, 0x2b, 0x2b, vdhr);    // defaults + +-11V, 6.2V
   sendCommand(cmd::PowerOn);
-  delay(200);
+  delay(100);
 
-  sendCommand(cmd::PanelSetting, 0xbf, 0x0d);  // defaults + LUT from register, B&W panel
-  sendCommand(cmd::PLLControl, 0x3c);
-  sendCommand(cmd::VcmDcSetting, 0x12);  // -1.0V
-  sendCommand(cmd::IntervalSetting, 0x97);
+
+/*
+ *   A  1010
+ *   B  1011
+ *   C  1100
+ *   D  1101
+ *   E  1110
+ *   F  1111
+ *   
+ */
+
+  uint8_t RES = 0b10;   static_assert(ScreenWidth <= 128 && ScreenHeight <= 296);
+  uint8_t LUTfromReg = mono ? 0 : 1;
+  uint8_t BWR = mono ? 0 : 1;
+  uint8_t PSR_Lo = 0x0f;  // scan up, shift right, boost on, no soft reset
+  uint8_t PSR = (RES << 6) | (LUTfromReg << 5) | (BWR << 4) | PSR_Lo;
+
+  if (mono)
+  {
+    sendCommand(cmd::PanelSetting, 0x1f, 0x0d);  // undocumented 0D :shrugemoji:
+  }
+  else
+  {
+    sendCommand(cmd::PanelSetting, PSR);
+    sendCommand(cmd::PLLControl, 0x3c);
+  }
+      
   static_assert(ScreenWidth < 256);
   sendCommand(cmd::ResolutionSetting, uint8_t(ScreenWidth), uint8_t(ScreenHeight >> 8), uint8_t(ScreenHeight & 0xff));
+  
+  sendCommand(cmd::VcmDcSetting, 0x12);  // -1.0V
+
+  uint8_t VBD = BWR ? 0b00 : 0b01;
+  uint8_t DDX = BWR ? 0b00 : 0b00;
+  uint8_t CDI = 0b0111;
+  sendCommand(cmd::IntervalSetting, (VBD << 6) | (DDX << 4) | CDI);
   
   if (screenMode == Grey4)
   {
@@ -322,14 +357,6 @@ void powerUp(ScreenMode screenMode = Grey4)
     sendBuffer(cmd::B2WLut, B2WLut_Grey);
     sendBuffer(cmd::W2BLut, W2BLut_Grey);
     sendBuffer(cmd::B2BLut, B2BLut_Grey);
-  }
-  else
-  {
-    sendBuffer(cmd::VComLut, VcomLut_Mono);
-    sendBuffer(cmd::W2WLut, W2WLut_Mono);
-    sendBuffer(cmd::B2WLut, B2WLut_Mono);
-    sendBuffer(cmd::W2BLut, W2BLut_Mono);
-    sendBuffer(cmd::B2BLut, B2BLut_Mono);
   }
 }
 
@@ -349,8 +376,10 @@ EPaperDisplay::EPaperDisplay()
   pinMode(magtag::pin::DataSelect, OUTPUT);
   pinMode(magtag::pin::ChipSelect, OUTPUT);
 
-  magtag::powerUp();
-  magtag::powerDown();  // assume we want to be off until told otherwise
+  digitalWrite(magtag::pin::ChipSelect, 1);
+  digitalWrite(magtag::pin::DataSelect, 0);
+
+  SPI.begin();
 
   clear();
 }
@@ -359,6 +388,16 @@ EPaperDisplay::EPaperDisplay()
 EPaperDisplay::~EPaperDisplay()
 {
   magtag::powerDown();
+}
+
+void EPaperDisplay::init()
+{
+  magtag::resetDisplay();
+  
+  magtag::powerUp(m_screenMode);
+  magtag::powerDown();  // assume we want to be off until told otherwise
+
+  m_needToInit = false;
 }
 
 
@@ -370,21 +409,27 @@ void EPaperDisplay::clear()
 
 void EPaperDisplay::drawBlart()
 {
-  for (int y=0; y<ScreenHeight; ++y)
-    m_plane0[20 + (y*ScreenWidth/8)] = 0xff;
+  for (int y=0; y<ScreenHeight/2; ++y)
+    m_plane0[4 + (y*(ScreenWidth/8))] = 0xaa;
+  for (int y=ScreenHeight/2; y<ScreenHeight; ++y)
+    m_plane1[6 + (y*(ScreenWidth/8))] = 0x55;
 }
 
 void EPaperDisplay::redrawScreen() const
 {
   using namespace magtag;
-  powerUp();
+  powerUp(m_screenMode);
 
-  sendBuffer(cmd::SendPlane0, m_plane0);
+  if (m_screenMode == Grey4)
+    sendBuffer(cmd::SendPlane0, m_plane0);
+  else
+    sendConstantData(cmd::SendPlane0, ScreenBytes, 0x00);
+    
   delay(2);
   sendBuffer(cmd::SendPlane1, m_plane1);
 
   sendCommand(cmd::DisplayRefresh);
   delay(DisplayRefreshDelay);
   
-  powerDown();
+  //powerDown();
 }
