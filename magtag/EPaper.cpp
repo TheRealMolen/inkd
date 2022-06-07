@@ -433,3 +433,21 @@ void EPaperDisplay::redrawScreen() const
   
   //powerDown();
 }
+
+void EPaperDisplay::quickDraw() const
+{
+  using namespace magtag;
+  powerUp(m_screenMode);
+  
+  if (m_screenMode == Grey4)
+    sendBuffer(cmd::SendPlane0, m_plane0);
+  else
+    sendConstantData(cmd::SendPlane0, ScreenBytes, 0x00);
+    
+  delay(2);
+  sendBuffer(cmd::SendPlane1, m_plane1);
+
+  sendCommand(cmd::DataStop);
+
+  delay(100);
+}

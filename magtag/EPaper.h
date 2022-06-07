@@ -32,6 +32,7 @@ public:
     inline void plot(uint8_t x, uint16_t y, uint8_t col);
 
     void redrawScreen() const;
+    void quickDraw() const;
 
     void setScreenMode(ScreenMode mode)   { m_screenMode = mode; }
 
@@ -56,7 +57,7 @@ void EPaperDisplay::plot(uint8_t x, uint16_t y, uint8_t col)
 {
   uint8_t xbit = x & 7;
   uint8_t x8 = x / 8;
-  uint8_t mask = 1 << xbit;
+  uint8_t mask = 1 << (7 - xbit);
 
   uint32_t ix = x8 + y * (ScreenWidth / 8);
 
